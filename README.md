@@ -6,8 +6,8 @@
 
 | 目录 | 用途 |
 | --- | --- |
-| `skills/ziwei/` | 紫微斗数分层断盘：核盘、格局、正曜组合、四化、大限流年与专题判断 |
-| `ziwei-paipan-code/` | 真太阳时校正、本命盘与运限盘，输出 JSON |
+| `skills/ziwei/` | 紫微斗数方法：排盘核对、原局概览、专题分析、限运分析与规则查询 |
+| `ziwei-paipan-code/` | 真太阳时校正、本命盘与运限盘；安装和打包时自动内置到 Skill |
 
 排盘只生成盘面结构。吉凶判断由 `ziwei` Skill 的规则执行，不把排盘字段直接写成命运事实。
 
@@ -30,7 +30,7 @@
 | Cline | `~/.cline/skills` | `.cline/skills` |
 | WorkBuddy | `~/.codebuddy/skills` 或上传 WorkBuddy ZIP | `.codebuddy/skills` |
 
-所有客户端读取 `skills/` 下的同一份源文件，不维护内容不同的平台分叉。目录约定不同的客户端可用 `--agent custom` 指定准确位置。
+所有客户端读取 `skills/` 下的同一份方法源文件，不维护内容不同的平台分叉。安装器和分发包会把排盘源码与数据放入 Skill 的 `scripts/ziwei-paipan/`，目录约定不同的客户端可用 `--agent custom` 指定准确位置。
 
 ## 一键安装
 
@@ -46,6 +46,8 @@ cd ziwei-skills
 ```bash
 python3 scripts/install.py --agent all --scope user
 ```
+
+安装器会复制方法、排盘源码和数据，不会静默修改全局 Python 环境。首次调用排盘若提示缺依赖，按提示对相应 `requirements.txt` 执行 `python -m pip install -r ...`。
 
 仅安装到开放标准通用目录：
 
@@ -79,7 +81,7 @@ python3 scripts/install.py --agent custom --destination /path/to/agent/skills
 
 从 [最新 Release](https://github.com/songgoldenwind-crypto/ziwei-skills/releases/latest) 下载 `ziwei-skills-workbuddy.zip`，在 WorkBuddy 的“专家·技能·连接器 → 技能 → 添加技能 → 上传技能”中导入。它会显示为“紫微斗数全平台套装”一个卡片，一次安装断盘方法与确定性排盘模块。
 
-`ziwei-workbuddy.zip` 继续保留，供只需要断盘方法的用户单独安装。
+`ziwei-workbuddy.zip` 继续保留为单 Skill 卡片，同样包含排盘模块。
 
 WorkBuddy 专用包包含中英文展示说明、版本、作者和工具白名单，并将参考资料转换为 WorkBuddy 的 `@references/...` 引用形式。
 
@@ -114,7 +116,7 @@ https://github.com/songgoldenwind-crypto/ziwei-skills
 python3 scripts/package-skills.py
 ```
 
-`dist/ziwei.skill` 与 `dist/ziwei-agent.zip` 的 `SKILL.md` 位于压缩包根目录；`dist/ziwei.zip` 带顶层 Skill 文件夹，供 Claude 上传；`dist/ziwei-skills-workbuddy.zip` 是 WorkBuddy 单卡完整包；`dist/ziwei-skills-plugin.zip` 同时包含 OpenAI 与 Claude 插件清单。
+`dist/ziwei.skill` 与 `dist/ziwei-agent.zip` 的 `SKILL.md` 位于压缩包根目录；`dist/ziwei.zip` 带顶层 Skill 文件夹，供 Claude 上传；`dist/ziwei-skills-workbuddy.zip` 是 WorkBuddy 单卡完整包；`dist/ziwei-skills-plugin.zip` 同时包含 OpenAI 与 Claude 插件清单。所有这些包都带 `scripts/ziwei-paipan/`。
 
 ## 安装排盘模块
 
@@ -131,6 +133,7 @@ python -m pip install -r requirements.txt
 
 ```bash
 python -m ziwei_paipan --date 1990-05-20 --time 12:30 --gender 男 --location 上海
+python run.py --date 1990-05-20 --time 12:30 --gender 男 --location 上海
 ```
 
 完整 CLI 与 JSON 字段说明见 [`ziwei-paipan-code/README.md`](ziwei-paipan-code/README.md)。`geopy` 与 `timezonefinder` 为可选依赖：装上后，内置城市库查不到的地名会走在线地理编码。
@@ -143,6 +146,7 @@ python -m ziwei_paipan --date 1990-05-20 --time 12:30 --gender 男 --location �
 ├── .claude-plugin/                    # Claude 市场适配
 ├── .codex-plugin/plugin.json          # OpenAI 插件适配
 ├── skills/ziwei/
+│   └── scripts/run_paipan.py          # 开发目录与安装包统一入口
 ├── ziwei-paipan-code/
 ├── scripts/
 │   ├── install.py

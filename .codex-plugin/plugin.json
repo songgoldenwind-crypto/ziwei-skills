@@ -1,7 +1,7 @@
 {
   "name": "ziwei-skills",
-  "version": "1.0.0",
-  "description": "紫微斗数排盘、命盘核对与分层断盘：宫位、正曜、四化、格局与大限流年。",
+  "version": "1.1.0",
+  "description": "真太阳时紫微斗数排盘、核盘，以及原局、专题与大限流年解读。",
   "author": {
     "name": "songgoldenwind-crypto",
     "url": "https://github.com/songgoldenwind-crypto"
@@ -13,16 +13,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "紫微斗数 Skills",
-    "shortDescription": "紫微斗数排盘、命盘核对与分层断盘",
-    "longDescription": "提供一套边界清晰的紫微斗数断盘方法，覆盖命盘核对、宫位取用、正曜与吉煞、四化、格局、六十星系与大限流年，并配套本地排盘模块。",
+    "shortDescription": "真太阳时排盘与有依据的紫微斗数解读",
+    "longDescription": "自带真太阳时排盘模块，区分排盘、原局概览、专题分析和限运分析，并把盘面事实、传统规则与语境推断分开呈现。",
     "developerName": "songgoldenwind-crypto",
     "category": "Lifestyle",
     "capabilities": ["Reasoning"],
     "websiteURL": "https://github.com/songgoldenwind-crypto/ziwei-skills",
     "defaultPrompt": [
-      "请按紫微斗数排出我的命盘并核对。",
-      "请按紫微斗数分析这张命盘的事业与财运。",
-      "请看我这个大限和今年流年的走势。"
+      "请用真太阳时排出我的紫微命盘并核对关键字段。",
+      "请做这张命盘的原局概览，说明优势、短板与事业财帛。",
+      "请结合原局、大限和流年分析我今年的重点。"
     ],
     "brandColor": "#3B3A6E"
   }

@@ -79,6 +79,7 @@ const claudeMarketplace = readJson('.claude-plugin/marketplace.json')
 assert.equal(claudeMarketplace.plugins.length, 1)
 assert.equal(claudeMarketplace.plugins[0].name, codexPlugin.name)
 assert.equal(claudeMarketplace.plugins[0].source, './')
+assert.equal(claudeMarketplace.plugins[0].version, codexPlugin.version)
 
 const codexMarketplace = readJson('.agents/plugins/marketplace.json')
 assert.equal(codexMarketplace.plugins.length, 1)
@@ -86,6 +87,10 @@ assert.equal(codexMarketplace.plugins[0].name, codexPlugin.name)
 assert.equal(codexMarketplace.plugins[0].source.source, 'url')
 assert.equal(codexMarketplace.plugins[0].source.url,
   'https://github.com/songgoldenwind-crypto/ziwei-skills.git')
+assert.equal(codexMarketplace.plugins[0].source.ref, 'master')
+
+assert(fs.existsSync(path.join(root, 'skills/ziwei/scripts/run_paipan.py')),
+  '缺少统一排盘入口 scripts/run_paipan.py')
 
 const license = fs.readFileSync(path.join(root, 'LICENSE'), 'utf8')
 assert.match(license, /^MIT License\n/)

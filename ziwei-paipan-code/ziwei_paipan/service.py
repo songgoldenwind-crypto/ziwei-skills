@@ -8,7 +8,7 @@ import pytz
 from py_iztro import Astro
 
 from . import utils
-from .ai_context import build_ziwei_ai_context, parse_four_pillars
+from .ai_context import build_horoscope_ai_context, build_ziwei_ai_context, parse_four_pillars
 
 
 ZHI_LIST = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
@@ -96,7 +96,7 @@ def _require_bool(payload: dict[str, Any], key: str, default: bool = True) -> bo
     raise ValueError(f"{key} 只支持布尔值")
 
 
-def _normalize_payload(payload: dict[str, Any]) -> dict[str, str]:
+def _normalize_payload(payload: dict[str, Any]) -> dict[str, Any]:
     solar_date = _normalize_solar_date_text(_require_str(payload, "solar_date", "date"))
     time_str = _normalize_time_text(_require_str(payload, "time"))
     gender_raw = _require_str(payload, "gender").lower()
@@ -114,6 +114,14 @@ def _normalize_payload(payload: dict[str, Any]) -> dict[str, str]:
         "location": location,
         "use_true_solar": use_true_solar,
     }
+
+
+def _minutes_to_nearest_shichen_boundary(value: datetime) -> float:
+    minute_of_day = value.hour * 60 + value.minute + value.second / 60
+    boundaries = range(60, 24 * 60, 120)
+    distances = [abs(minute_of_day - boundary) for boundary in boundaries]
+    wrapped_distances = [24 * 60 - distance for distance in distances]
+    return round(min(distances + wrapped_distances), 3)
 
 
 def prepare_true_solar(payload: dict[str, Any]) -> dict[str, Any]:
@@ -146,8 +154,21 @@ def prepare_true_solar(payload: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         raise RuntimeError(f"真太阳时计算失败: {exc}") from exc
 
+    clock_chinese_hour_idx = utils.get_chinese_hour(local_dt.hour)
     chinese_hour_idx = utils.get_chinese_hour(chart_dt.hour)
     solar_date_tst = chart_dt.strftime("%Y-%m-%d")
+    # Astronomy returns a wall-clock true-solar datetime whose tzinfo may use a
+    # historical local-mean offset. Compare naive wall times so the reported
+    # correction matches what the user sees in the timestamps.
+    solar_shift_minutes = round(
+        (
+            chart_dt.replace(tzinfo=None) - local_dt.replace(tzinfo=None)
+        ).total_seconds()
+        / 60,
+        3,
+    )
+    boundary_distance = _minutes_to_nearest_shichen_boundary(chart_dt)
+    crossed_shichen = clock_chinese_hour_idx != chinese_hour_idx
 
     return {
         "input": normalized,
@@ -164,8 +185,13 @@ def prepare_true_solar(payload: dict[str, Any]) -> dict[str, Any]:
             "true_solar_datetime": chart_dt.strftime("%Y-%m-%d %H:%M:%S") if normalized["use_true_solar"] else None,
             "chart_datetime": chart_dt.strftime("%Y-%m-%d %H:%M:%S"),
             "equation_of_time_minutes": round(float(tst_result.get("eot_minutes", 0.0)), 6) if tst_result else None,
+            "true_solar_shift_minutes": solar_shift_minutes,
+            "clock_chinese_hour": ZHI_LIST[clock_chinese_hour_idx],
             "chinese_hour_index": chinese_hour_idx,
             "chinese_hour": ZHI_LIST[chinese_hour_idx],
+            "crossed_shichen_boundary": crossed_shichen,
+            "minutes_to_nearest_shichen_boundary": boundary_distance,
+            "near_shichen_boundary": boundary_distance <= 10,
             "solar_date_for_chart": solar_date_tst,
         },
         "chart_input": {
@@ -191,12 +217,12 @@ def _build_astrolabe(payload: dict[str, Any]) -> tuple[dict[str, Any], Any]:
 
 
 def _resolve_horoscope_target(payload: dict[str, Any]) -> dict[str, Any]:
-    target_date = _require_str(payload, "target_date", "targetDate")
+    target_date = _normalize_solar_date_text(_require_str(payload, "target_date", "targetDate"))
     raw_target_time = payload.get("target_time", payload.get("targetTime", "00:00"))
     if raw_target_time is None:
         target_time = "00:00"
     elif isinstance(raw_target_time, str):
-        target_time = raw_target_time.strip() or "00:00"
+        target_time = _normalize_time_text(raw_target_time.strip() or "00:00")
     else:
         raise ValueError("target_time 只支持 HH:MM 字符串")
 
@@ -254,4 +280,8 @@ def compute_horoscope(payload: dict[str, Any]) -> dict[str, Any]:
         "四柱": parse_four_pillars(natal_data.get("chineseDate")),
         "target": target,
         "data": horoscope_data,
+        "ai_context": {
+            "原局": build_ziwei_ai_context(natal_data),
+            "运限": build_horoscope_ai_context(natal_data, horoscope_data),
+        },
     }

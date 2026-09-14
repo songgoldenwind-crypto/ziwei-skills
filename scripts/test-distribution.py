@@ -64,7 +64,12 @@ class InstallerTests(unittest.TestCase):
     def assert_layouts(self, root: Path, layouts: tuple[str, ...]) -> None:
         for layout in layouts:
             for skill in SKILLS:
-                self.assertTrue((root / layout / skill / "SKILL.md").is_file())
+                installed = root / layout / skill
+                self.assertTrue((installed / "SKILL.md").is_file())
+                self.assertTrue((installed / "scripts/run_paipan.py").is_file())
+                self.assertTrue((installed / "scripts/ziwei-paipan/run.py").is_file())
+                self.assertTrue((installed / "scripts/ziwei-paipan/requirements.txt").is_file())
+                self.assertFalse((installed / "scripts/ziwei-paipan/.venv").exists())
 
     def test_all_user_layouts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -105,6 +110,7 @@ class InstallerTests(unittest.TestCase):
                 "--skill", "ziwei",
             )
             self.assertTrue((destination / "ziwei/SKILL.md").is_file())
+            self.assertTrue((destination / "ziwei/scripts/ziwei-paipan/run.py").is_file())
 
     def test_workbuddy_install_renders_platform_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -141,12 +147,17 @@ class PackagingTests(unittest.TestCase):
                     names = archive.namelist()
                     self.assertIn("SKILL.md", names)
                     self.assertIn("LICENSE", names)
+                    self.assertIn("scripts/run_paipan.py", names)
+                    self.assertIn("scripts/ziwei-paipan/run.py", names)
+                    self.assertIn("scripts/ziwei-paipan/requirements.txt", names)
                     self.assertTrue(archive.read("LICENSE").startswith(b"MIT License\n"))
                     self.assertFalse(any(name.startswith(f"{skill}/") for name in names))
+                    self.assertFalse(any("/.venv/" in name for name in names))
                 with zipfile.ZipFile(zip_archive) as archive:
                     names = archive.namelist()
                     self.assertIn(f"{skill}/SKILL.md", names)
                     self.assertIn(f"{skill}/LICENSE", names)
+                    self.assertIn(f"{skill}/scripts/ziwei-paipan/run.py", names)
                     self.assertTrue(
                         archive.read(f"{skill}/LICENSE").startswith(b"MIT License\n")
                     )
@@ -171,6 +182,7 @@ class PackagingTests(unittest.TestCase):
                 self.assertIn(".codex-plugin/plugin.json", names)
                 self.assertIn(".claude-plugin/plugin.json", names)
                 self.assertIn("skills/ziwei/SKILL.md", names)
+                self.assertIn("skills/ziwei/scripts/ziwei-paipan/run.py", names)
                 self.assertTrue(archive.read("LICENSE").startswith(b"MIT License\n"))
                 self.assertNotIn(".claude-plugin/marketplace.json", names)
 
@@ -196,6 +208,8 @@ class PackagingTests(unittest.TestCase):
                 self.assertNotIn("\n---\n", method)
                 self.assertNotIn("](references/", method)
                 self.assertIn("@references/ziwei/", method)
+                self.assertIn("python scripts/ziwei/run_paipan.py", method)
+                self.assertIn("ziwei-skills/scripts/ziwei/run_paipan.py", names)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from workbuddy_compat import render_workbuddy_skill
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILLS_ROOT = REPO_ROOT / "skills"
+PAIPAN_ROOT = REPO_ROOT / "ziwei-paipan-code"
 SKILLS = ("ziwei",)
 
 USER_PATHS = {
@@ -164,6 +165,14 @@ def install(args: argparse.Namespace) -> int:
             source,
             destination,
             ignore=shutil.ignore_patterns(".DS_Store", "__pycache__", "*.pyc"),
+        )
+        paipan_destination = destination / "scripts" / "ziwei-paipan"
+        shutil.copytree(
+            PAIPAN_ROOT,
+            paipan_destination,
+            ignore=shutil.ignore_patterns(
+                ".DS_Store", ".venv", "venv", "__pycache__", "*.pyc", "*.egg-info"
+            ),
         )
         if workbuddy:
             skill_file = destination / "SKILL.md"

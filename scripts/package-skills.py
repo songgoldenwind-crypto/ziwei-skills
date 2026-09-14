@@ -61,6 +61,13 @@ def skill_entries(skill_name: str, *, wrapper: bool) -> list[tuple[Path, str]]:
         (path, prefix + path.relative_to(skill_root).as_posix())
         for path in files_under(skill_root)
     ]
+    entries.extend(
+        (
+            path,
+            prefix + "scripts/ziwei-paipan/" + path.relative_to(REPO_ROOT / PAIPAN_DIR).as_posix(),
+        )
+        for path in files_under(REPO_ROOT / PAIPAN_DIR)
+    )
     entries.append((REPO_ROOT / "LICENSE", prefix + "LICENSE"))
     return entries
 
@@ -73,7 +80,16 @@ def plugin_entries() -> list[tuple[Path, str]]:
         REPO_ROOT / "LICENSE",
     ]
     included.extend(path for name in SKILLS for path in files_under(REPO_ROOT / "skills" / name))
-    return [(path, path.relative_to(REPO_ROOT).as_posix()) for path in included]
+    entries = [(path, path.relative_to(REPO_ROOT).as_posix()) for path in included]
+    entries.extend(
+        (
+            path,
+            "skills/ziwei/scripts/ziwei-paipan/"
+            + path.relative_to(REPO_ROOT / PAIPAN_DIR).as_posix(),
+        )
+        for path in files_under(REPO_ROOT / PAIPAN_DIR)
+    )
+    return entries
 
 
 def workbuddy_suite_entries() -> tuple[list[tuple[Path, str]], dict[str, bytes]]:

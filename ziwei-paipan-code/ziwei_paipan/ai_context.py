@@ -16,6 +16,15 @@ MUTAGEN_NAMES = {
 
 CORE_PALACES = ["命宫", "官禄", "财帛", "迁移", "福德", "夫妻", "田宅"]
 PILLAR_KEYS = ("年柱", "月柱", "日柱", "时柱")
+TRANSFORMATION_LABELS = ("化禄", "化权", "化科", "化忌")
+HOROSCOPE_LAYERS = (
+    ("decadal", "大限"),
+    ("age", "小限"),
+    ("yearly", "流年"),
+    ("monthly", "流月"),
+    ("daily", "流日"),
+    ("hourly", "流时"),
+)
 
 
 def _unique(items: list[Any]) -> list[str]:
@@ -107,6 +116,87 @@ def _sanfang_sizheng(palaces: list[dict[str, Any]], target_name: str) -> list[di
                 }
             )
     return result
+
+
+def _star_locations(palaces: list[dict[str, Any]]) -> dict[str, list[str]]:
+    locations: dict[str, list[str]] = {}
+    for palace in palaces:
+        palace_name = str(palace.get("宫位") or "")
+        for group in ("正曜", "辅曜", "杂曜"):
+            for star in palace.get(group) or []:
+                star_name = str(star.get("名称") or "")
+                if star_name and palace_name:
+                    locations.setdefault(star_name, []).append(palace_name)
+    return locations
+
+
+def _normalize_horoscope_layer(
+    layer: dict[str, Any],
+    natal_palaces: list[dict[str, Any]],
+    locations: dict[str, list[str]],
+) -> dict[str, Any]:
+    index = layer.get("index")
+    active_palace = (
+        natal_palaces[index]
+        if isinstance(index, int) and 0 <= index < len(natal_palaces)
+        else None
+    )
+    palace_names = layer.get("palaceNames") or []
+
+    transformations = []
+    for label, star_name in zip(TRANSFORMATION_LABELS, layer.get("mutagen") or []):
+        transformations.append(
+            {
+                "四化": label,
+                "星曜": star_name,
+                "原局落宫": locations.get(str(star_name), []),
+            }
+        )
+
+    moving_stars = []
+    for palace_index, stars in enumerate(layer.get("stars") or []):
+        if not stars:
+            continue
+        natal_palace = natal_palaces[palace_index] if palace_index < len(natal_palaces) else {}
+        moving_stars.append(
+            {
+                "地支": natal_palace.get("地支"),
+                "原局宫位": natal_palace.get("宫位"),
+                "本层宫位": palace_names[palace_index] if palace_index < len(palace_names) else None,
+                "星曜": [_normalize_star(star) for star in stars],
+            }
+        )
+
+    return {
+        "天干地支": f"{layer.get('heavenlyStem') or ''}{layer.get('earthlyBranch') or ''}",
+        "本层命宫地支": layer.get("earthlyBranch"),
+        "本层命宫叠原局": active_palace.get("宫位") if active_palace else None,
+        "本层命宫正曜": [star.get("名称") for star in (active_palace or {}).get("正曜") or []],
+        "虚岁": layer.get("nominalAge"),
+        "四化": transformations,
+        "流曜落宫": moving_stars,
+    }
+
+
+def build_horoscope_ai_context(
+    natal_chart: dict[str, Any],
+    horoscope: dict[str, Any],
+) -> dict[str, Any]:
+    """把运限原始层整理为可直接核对的叠宫与四化语义。"""
+    natal_palaces = [_normalize_palace(palace) for palace in natal_chart.get("palaces") or []]
+    locations = _star_locations(natal_palaces)
+    layers = {}
+    for raw_key, display_name in HOROSCOPE_LAYERS:
+        raw_layer = horoscope.get(raw_key)
+        if isinstance(raw_layer, dict):
+            layers[display_name] = _normalize_horoscope_layer(raw_layer, natal_palaces, locations)
+
+    return {
+        "目标公历": horoscope.get("solarDate"),
+        "目标农历": horoscope.get("lunarDate"),
+        "虚岁": (horoscope.get("age") or {}).get("nominalAge"),
+        "运限层": layers,
+    }
 
 
 def build_ziwei_ai_context(chart: dict[str, Any]) -> dict[str, Any]:

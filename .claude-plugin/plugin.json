@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "ziwei-skills",
-  "version": "1.0.0",
-  "description": "紫微斗数排盘、命盘核对与分层断盘：宫位、正曜、四化、格局与大限流年。",
+  "version": "1.1.0",
+  "description": "真太阳时紫微斗数排盘、核盘，以及原局、专题与大限流年解读。",
   "author": {
     "name": "songgoldenwind-crypto",
     "url": "https://github.com/songgoldenwind-crypto"

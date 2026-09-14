@@ -12,8 +12,8 @@
     {
       "name": "ziwei-skills",
       "source": "./",
-      "description": "紫微斗数排盘、命盘核对与分层断盘",
-      "version": "1.0.0",
+      "description": "真太阳时紫微斗数排盘、核盘与分模式解读",
+      "version": "1.1.0",
       "category": "education",
       "tags": ["ziwei", "ziweidoushu", "紫微斗数"]
     }

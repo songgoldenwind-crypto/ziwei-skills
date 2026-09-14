@@ -23,12 +23,11 @@ WORKBUDDY_METADATA = {
         "display_name": "紫微斗数",
         "display_name_en": "Ziwei Doushu",
         "description_zh": (
-            "按命盘核对、宫位取用、正曜与吉煞、四化、格局和大限流年的顺序分析紫微斗数命盘。"
+            "生成并核对真太阳时命盘，按原局、专题或限运模式给出有盘面依据的紫微斗数解读。"
         ),
         "description_en": (
-            "Verify and interpret Ziwei Doushu charts through palace selection, "
-            "major and auxiliary stars, the four transformations, chart patterns, "
-            "and decade and annual cycles."
+            "Generate and verify true-solar-time charts, then provide evidence-based "
+            "natal, topic-focused, or timing interpretations."
         ),
     },
 }
@@ -95,6 +94,10 @@ def render_workbuddy_method(skill_name: str, canonical: str) -> str:
     body = REFERENCE_LINK.sub(
         lambda match: f"@references/{skill_name}/{match.group(1).removeprefix('references/')}",
         parsed.group("body"),
+    )
+    body = body.replace(
+        "python scripts/run_paipan.py",
+        f"python scripts/{skill_name}/run_paipan.py",
     )
     body = body.replace("`scripts/", f"`scripts/{skill_name}/")
     return body

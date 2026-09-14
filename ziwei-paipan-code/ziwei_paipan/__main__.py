@@ -60,8 +60,8 @@ def main(argv: list[str] | None = None) -> int:
             result = compute_horoscope(payload)
         else:
             result = compute(payload)
-            if args.no_ai_context:
-                result.pop("ai_context", None)
+        if args.no_ai_context:
+            result.pop("ai_context", None)
     except (ValueError, RuntimeError) as exc:
         print(f"排盘失败：{exc}", file=sys.stderr)
         return 1
