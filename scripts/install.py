@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Install the bundled Agent Skills into supported agent skill directories."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+
+from workbuddy_compat import render_workbuddy_skill
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SKILLS_ROOT = REPO_ROOT / "skills"
+SKILLS = ("ziwei",)
+
+USER_PATHS = {
+    "universal": Path(".agents/skills"),
+    "codex": Path(".agents/skills"),
+    "claude": Path(".claude/skills"),
+    "cursor": Path(".cursor/skills"),
+    "gemini": Path(".gemini/skills"),
+    "copilot": Path(".copilot/skills"),
+    "opencode": Path(".config/opencode/skills"),
+    "windsurf": Path(".codeium/windsurf/skills"),
+    "cline": Path(".cline/skills"),
+    "workbuddy": Path(".codebuddy/skills"),
+}
+
+PROJECT_PATHS = {
+    "universal": Path(".agents/skills"),
+    "codex": Path(".agents/skills"),
+    "claude": Path(".claude/skills"),
+    "cursor": Path(".cursor/skills"),
+    "gemini": Path(".gemini/skills"),
+    "copilot": Path(".github/skills"),
+    "opencode": Path(".opencode/skills"),
+    "windsurf": Path(".windsurf/skills"),
+    "cline": Path(".cline/skills"),
+    "workbuddy": Path(".codebuddy/skills"),
+}
+
+AGENTS = tuple(name for name in USER_PATHS if name != "universal")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Install Ziwei Doushu Agent Skills for one or more AI agents."
+    )
+    parser.add_argument(
+        "--agent",
+        choices=("universal", *AGENTS, "all", "custom"),
+        default="universal",
+        help="Target agent. 'all' installs each native layout; 'custom' needs --destination.",
+    )
+    parser.add_argument(
+        "--scope",
+        choices=("user", "project"),
+        default="user",
+        help="Install for the current user or one project.",
+    )
+    parser.add_argument(
+        "--target",
+        type=Path,
+        help="Override the user home or project root used to resolve native paths.",
+    )
+    parser.add_argument(
+        "--destination",
+        type=Path,
+        help="Exact skills directory for --agent custom.",
+    )
+    parser.add_argument(
+        "--skill",
+        choices=("all", *SKILLS),
+        default="all",
+        help="Install every bundled skill or one named skill.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Replace an existing skill directory.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print planned copies without changing files.",
+    )
+    return parser.parse_args()
+
+
+def target_directories(args: argparse.Namespace) -> list[tuple[Path, bool]]:
+    if args.agent == "custom":
+        if args.destination is None:
+            raise ValueError("--agent custom requires --destination")
+        return [(args.destination.expanduser().resolve(), False)]
+    if args.destination is not None:
+        raise ValueError("--destination can only be used with --agent custom")
+
+    base = args.target.expanduser() if args.target else (
+        Path.home() if args.scope == "user" else Path.cwd()
+    )
+    layouts = USER_PATHS if args.scope == "user" else PROJECT_PATHS
+    agents = AGENTS if args.agent == "all" else (args.agent,)
+
+    # Several agents intentionally share the open-standard .agents/skills path.
+    destinations: list[tuple[Path, bool]] = []
+    seen: set[Path] = set()
+    for agent in agents:
+        destination = (base / layouts[agent]).resolve()
+        if destination not in seen:
+            destinations.append((destination, agent == "workbuddy"))
+            seen.add(destination)
+    return destinations
+
+
+def plugin_version() -> str:
+    manifest = REPO_ROOT / ".codex-plugin" / "plugin.json"
+    return json.loads(manifest.read_text(encoding="utf-8"))["version"]
+
+
+def remove_existing(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    else:
+        shutil.rmtree(path)
+
+
+def install(args: argparse.Namespace) -> int:
+    try:
+        destinations = target_directories(args)
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    skill_names = SKILLS if args.skill == "all" else (args.skill,)
+    operations = [
+        (SKILLS_ROOT / skill_name, directory / skill_name, workbuddy)
+        for directory, workbuddy in destinations
+        for skill_name in skill_names
+    ]
+
+    conflicts = [
+        destination
+        for _, destination, _ in operations
+        if destination.exists() or destination.is_symlink()
+    ]
+    if conflicts and not args.force:
+        print("error: these skill directories already exist; use --force to replace them:", file=sys.stderr)
+        for conflict in conflicts:
+            print(f"  {conflict}", file=sys.stderr)
+        return 1
+
+    version = plugin_version()
+    for source, destination, workbuddy in operations:
+        print(f"{'would install' if args.dry_run else 'installing'} {source.name} -> {destination}")
+        if args.dry_run:
+            continue
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists() or destination.is_symlink():
+            remove_existing(destination)
+        shutil.copytree(
+            source,
+            destination,
+            ignore=shutil.ignore_patterns(".DS_Store", "__pycache__", "*.pyc"),
+        )
+        if workbuddy:
+            skill_file = destination / "SKILL.md"
+            skill_file.write_text(
+                render_workbuddy_skill(
+                    source.name,
+                    skill_file.read_text(encoding="utf-8"),
+                    version,
+                ),
+                encoding="utf-8",
+            )
+
+    if not args.dry_run:
+        print(f"installed {len(operations)} skill director{'y' if len(operations) == 1 else 'ies'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(install(parse_args()))

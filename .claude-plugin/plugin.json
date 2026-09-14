@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "ziwei-skills",
+  "version": "1.0.0",
+  "description": "紫微斗数排盘、命盘核对与分层断盘：宫位、正曜、四化、格局与大限流年。",
+  "author": {
+    "name": "songgoldenwind-crypto",
+    "url": "https://github.com/songgoldenwind-crypto"
+  },
+  "homepage": "https://github.com/songgoldenwind-crypto/ziwei-skills",
+  "repository": "https://github.com/songgoldenwind-crypto/ziwei-skills",
+  "license": "MIT",
+  "keywords": ["ziwei", "ziweidoushu", "astrology", "紫微斗数", "斗数"]
+}

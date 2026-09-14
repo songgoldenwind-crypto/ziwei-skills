@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "ziwei-skills",
+  "owner": {
+    "name": "songgoldenwind-crypto",
+    "url": "https://github.com/songgoldenwind-crypto"
+  },
+  "metadata": {
+    "description": "紫微斗数 Skills 发布源"
+  },
+  "plugins": [
+    {
+      "name": "ziwei-skills",
+      "source": "./",
+      "description": "紫微斗数排盘、命盘核对与分层断盘",
+      "version": "1.0.0",
+      "category": "education",
+      "tags": ["ziwei", "ziweidoushu", "紫微斗数"]
+    }
+  ]
+}

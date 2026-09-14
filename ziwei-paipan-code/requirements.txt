@@ -1,0 +1,4 @@
+py-iztro
+pytz
+pyswisseph
+pandas
